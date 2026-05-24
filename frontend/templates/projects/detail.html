@@ -1,0 +1,154 @@
+{% extends "core/base.html" %}
+{% block title %}Project — TaskFlow{% endblock %}
+
+{% block body %}
+<div class="app-layout">
+  {% include "core/sidebar.html" %}
+
+  <main class="main-content">
+    <div class="page-header">
+      <div style="margin-bottom:6px">
+        <a href="/projects/" style="font-size:13px;color:var(--text-muted)">← All projects</a>
+      </div>
+      <div class="topbar">
+        <div>
+          <h1 class="page-title" id="projectName">Loading…</h1>
+          <p class="page-subtitle" id="projectDesc"></p>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
+          <span id="projectStatusBadge"></span>
+          <button class="btn btn-secondary btn-sm" data-modal-open="membersModal">👥 Members</button>
+          <button class="btn btn-primary btn-sm"   data-modal-open="createTaskModal">+ New Task</button>
+        </div>
+      </div>
+      <!-- Stats mini -->
+      <div class="flex gap-6 mt-4" id="projectMiniStats" style="font-size:13px;color:var(--text-secondary)">
+        <span>Loading stats…</span>
+      </div>
+    </div>
+
+    <div class="page-body">
+      <!-- Filter bar -->
+      <div class="flex gap-3 items-center mb-6">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input class="form-input search-input" type="search" id="taskSearch" placeholder="Search tasks…" style="width:200px" />
+        </div>
+        <select class="form-input form-select text-sm" id="priorityFilter" style="width:auto;padding:8px 30px 8px 12px">
+          <option value="">All priorities</option>
+          <option value="critical">Critical</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+
+      <!-- Kanban Board -->
+      <div class="board" id="taskBoard">
+        <div class="board-column">
+          <div class="board-column-header">
+            <span class="board-column-title">To Do</span>
+            <span class="board-column-count" id="count-todo">0</span>
+          </div>
+          <div id="col-todo"></div>
+        </div>
+        <div class="board-column">
+          <div class="board-column-header">
+            <span class="board-column-title" style="color:var(--blue)">In Progress</span>
+            <span class="board-column-count" id="count-in_progress">0</span>
+          </div>
+          <div id="col-in_progress"></div>
+        </div>
+        <div class="board-column">
+          <div class="board-column-header">
+            <span class="board-column-title" style="color:var(--purple)">In Review</span>
+            <span class="board-column-count" id="count-in_review">0</span>
+          </div>
+          <div id="col-in_review"></div>
+        </div>
+        <div class="board-column">
+          <div class="board-column-header">
+            <span class="board-column-title" style="color:var(--green)">Done</span>
+            <span class="board-column-count" id="count-done">0</span>
+          </div>
+          <div id="col-done"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Create Task Modal -->
+<div class="modal-backdrop" id="createTaskModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">New Task</h2>
+      <div class="modal-close" data-modal-close="createTaskModal">✕</div>
+    </div>
+    <form id="createTaskForm" novalidate>
+      <div class="flex flex-col gap-4">
+        <div class="form-group">
+          <label class="form-label">Title *</label>
+          <input class="form-input" name="title" type="text" placeholder="What needs to be done?" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-input" name="description" rows="3"
+                    placeholder="Add more details…" style="resize:vertical"></textarea>
+        </div>
+        <div class="flex gap-3">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Priority</label>
+            <select class="form-input form-select" name="priority">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Due date</label>
+            <input class="form-input" name="due_date" type="date" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Assign to</label>
+          <select class="form-input form-select" name="assigned_to_id" id="assigneeSelect">
+            <option value="">Unassigned</option>
+          </select>
+        </div>
+        <div class="flex gap-3" style="margin-top:8px">
+          <button type="button" class="btn btn-secondary" style="flex:1" data-modal-close="createTaskModal">Cancel</button>
+          <button type="submit" class="btn btn-primary"  style="flex:1">Create Task</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Task Detail Modal -->
+<div class="modal-backdrop" id="taskDetailModal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <h2 class="modal-title" id="taskDetailTitle">Task</h2>
+      <div class="modal-close" data-modal-close="taskDetailModal">✕</div>
+    </div>
+    <div id="taskDetailBody"></div>
+  </div>
+</div>
+
+<!-- Members Modal -->
+<div class="modal-backdrop" id="membersModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Project Members</h2>
+      <div class="modal-close" data-modal-close="membersModal">✕</div>
+    </div>
+    <div id="membersList"></div>
+  </div>
+</div>
+
+<script src="/static/js/project-detail.js"></script>
+{% endblock %}

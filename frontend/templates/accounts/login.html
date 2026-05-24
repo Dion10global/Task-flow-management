@@ -1,0 +1,203 @@
+{% extends "core/base.html" %}
+{% block title %}Sign In — TaskFlow{% endblock %}
+
+{% block body %}
+<div class="auth-layout">
+  <!-- Left panel -->
+  <div class="auth-panel auth-panel-left">
+    <div style="position:relative;z-index:1;text-align:center">
+      <div class="brand">Task<span>Flow</span></div>
+      <p class="tagline">Your team's command centre. Projects, tasks, progress — all in one place.</p>
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="auth-panel">
+    <div class="auth-form">
+      <a href="/" class="flex items-center gap-2 mb-8" style="color:var(--text-muted);font-size:13px">← Back to home</a>
+
+      <!-- ── STEP 1: Email ── -->
+      <div id="step1">
+        <h1 class="auth-title">Welcome back</h1>
+        <p class="auth-subtitle">Enter your email and we'll send you a sign-in code</p>
+
+        <form id="loginForm" novalidate>
+          <div class="flex flex-col gap-4">
+            <div class="form-group">
+              <label class="form-label" for="email">Email address</label>
+              <input class="form-input" type="email" name="email" id="email"
+                     placeholder="you@company.com" required autocomplete="email" />
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top:4px;justify-content:center">
+              Send sign-in code →
+            </button>
+          </div>
+        </form>
+
+        <p class="text-sm text-secondary mt-6" style="text-align:center">
+          Don't have an account? <a href="/register/" style="color:var(--amber);font-weight:500">Create one free →</a>
+        </p>
+      </div>
+
+      <!-- ── STEP 2: OTP ── -->
+      <div id="step2" style="display:none">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <button onclick="goBack()" class="btn btn-ghost btn-sm" style="padding:4px 8px">←</button>
+          <h1 class="auth-title" style="margin:0">Check your email</h1>
+        </div>
+        <p class="auth-subtitle">Enter the 6-digit code we sent you</p>
+
+        <!-- Sent info box -->
+        <div id="emailSentBox" style="background:var(--amber-dim);border:1px solid var(--amber-border);border-radius:10px;padding:14px 16px;margin-bottom:24px;display:flex;gap:10px;align-items:flex-start">
+          <span style="font-size:18px;flex-shrink:0">📧</span>
+          <div>
+            <div class="text-sm font-medium">Code sent to <span id="displayEmail" style="color:var(--amber)"></span></div>
+            <div class="text-xs text-muted mt-1">Expires in 10 minutes · Check your spam folder</div>
+          </div>
+        </div>
+        <div id="devOtpBox" style="display:none;background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.25);border-radius:10px;padding:14px 16px;margin-bottom:24px;">
+          <div class="text-sm font-medium" style="color:var(--green)">🛠 DEV MODE — Email not sent</div>
+          <div class="text-xs text-muted mt-1">Your OTP has been auto-filled below</div>
+        </div>
+
+        <form id="otpForm" novalidate>
+          <div class="flex flex-col gap-4">
+            <div class="form-group">
+              <label class="form-label">6-digit sign-in code</label>
+              <input class="form-input" type="text" name="otp" id="otpInput"
+                     placeholder="e.g. 482910"
+                     maxlength="6" pattern="[0-9]{6}" inputmode="numeric" required
+                     style="font-size:24px;letter-spacing:8px;text-align:center;font-family:monospace" />
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top:4px;justify-content:center">
+              Sign in
+            </button>
+          </div>
+        </form>
+
+        <!-- Resend -->
+        <div style="text-align:center;margin-top:16px">
+          <span class="text-sm text-secondary">Didn't receive it? </span>
+          <button id="resendBtn" class="btn btn-ghost btn-sm" style="color:var(--amber);padding:4px 8px" onclick="resendCode()">Resend code</button>
+          <span id="resendTimer" class="text-xs text-muted" style="display:none"></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+let loginEmail = "";
+
+function goBack() {
+  document.getElementById("step2").style.display = "none";
+  document.getElementById("step1").style.display = "block";
+  document.getElementById("devOtpBox").style.display = "none";
+  document.getElementById("emailSentBox").style.display = "flex";
+  document.getElementById("otpInput").value = "";
+}
+
+// ── Step 1: request OTP ─────────────────────────────────────────
+document.getElementById("loginForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  clearFormErrors(this);
+  setFormLoading(this, true);
+  const { email } = serializeForm(this);
+  if (!email) { Toast.error("Please enter your email."); setFormLoading(this, false); return; }
+  try {
+    const res = await fetch("/api/v1/auth/login/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const json = await res.json();
+    loginEmail = email;
+    document.getElementById("displayEmail").textContent = email;
+    document.getElementById("step1").style.display = "none";
+    document.getElementById("step2").style.display = "block";
+    document.getElementById("otpInput").focus();
+    if (json.dev_otp) {
+      document.getElementById("devOtpBox").style.display = "block";
+      document.getElementById("emailSentBox").style.display = "none";
+      document.getElementById("otpInput").value = json.dev_otp;
+      Toast.info("DEV: OTP auto-filled — " + json.dev_otp);
+    } else {
+      Toast.success("Sign-in code sent! Check your inbox.");
+    }
+    startResendCooldown(60);
+  } catch { Toast.error("Something went wrong. Try again."); }
+  finally { setFormLoading(this, false); }
+});
+
+// ── Step 2: verify OTP → login ──────────────────────────────────
+document.getElementById("otpForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  clearFormErrors(this);
+  const { otp } = serializeForm(this);
+  if (!otp || otp.length !== 6) {
+    showFieldError(this, "otp", "Please enter the 6-digit code.");
+    return;
+  }
+  setFormLoading(this, true);
+  try {
+    const res = await fetch("/api/v1/auth/login/verify/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: loginEmail, otp }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || "Sign-in failed.");
+    Auth.set({ access: json.access, refresh: json.refresh }, json.user);
+    const next = new URLSearchParams(window.location.search).get("next") || "/dashboard/";
+    Toast.success("Welcome back!");
+    setTimeout(() => window.location.href = next, 400);
+  } catch (err) {
+    Toast.error(err.message || "Invalid or expired code.");
+  } finally {
+    setFormLoading(this, false);
+  }
+});
+
+// ── Resend ───────────────────────────────────────────────────────
+async function resendCode() {
+  try {
+    const res = await fetch("/api/v1/auth/login/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: loginEmail }),
+    });
+    const json = await res.json();
+    if (json.dev_otp) {
+      document.getElementById("otpInput").value = json.dev_otp;
+      Toast.info("DEV: OTP auto-filled — " + json.dev_otp);
+    } else {
+      Toast.success("New code sent!");
+    }
+    startResendCooldown(60);
+  } catch { Toast.error("Failed to resend. Try again."); }
+}
+
+function startResendCooldown(seconds) {
+  const btn   = document.getElementById("resendBtn");
+  const timer = document.getElementById("resendTimer");
+  btn.style.display   = "none";
+  timer.style.display = "inline";
+  let remaining = seconds;
+  const interval = setInterval(() => {
+    timer.textContent = `Resend in ${remaining}s`;
+    remaining--;
+    if (remaining < 0) {
+      clearInterval(interval);
+      btn.style.display   = "inline";
+      timer.style.display = "none";
+    }
+  }, 1000);
+}
+
+// Digits-only filter
+document.getElementById("otpInput").addEventListener("input", function() {
+  this.value = this.value.replace(/\D/g, "").slice(0, 6);
+});
+</script>
+{% endblock %}

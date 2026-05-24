@@ -1,0 +1,227 @@
+{% extends "core/base.html" %}
+{% block title %}Create Account — TaskFlow{% endblock %}
+
+{% block body %}
+<div class="auth-layout">
+  <!-- Left panel -->
+  <div class="auth-panel auth-panel-left">
+    <div style="position:relative;z-index:1;text-align:center">
+      <div class="brand">Task<span>Flow</span></div>
+      <p class="tagline">Join thousands of teams who ship projects on time.</p>
+      <div style="margin-top:40px;display:grid;gap:12px;max-width:280px">
+        <div class="card-elevated flex items-center gap-3">
+          <span style="font-size:20px">📧</span>
+          <span class="text-sm">OTP sent to your email — no spam ever</span>
+        </div>
+        <div class="card-elevated flex items-center gap-3">
+          <span style="font-size:20px">🔐</span>
+          <span class="text-sm">Verified accounts only — secure by design</span>
+        </div>
+        <div class="card-elevated flex items-center gap-3">
+          <span style="font-size:20px">⚡</span>
+          <span class="text-sm">Ready in under 60 seconds</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="auth-panel">
+    <div class="auth-form">
+      <a href="/" class="flex items-center gap-2 mb-8" style="color:var(--text-muted);font-size:13px">← Back to home</a>
+
+      <!-- ── STEP 1: Details ── -->
+      <div id="step1">
+        <h1 class="auth-title">Create your account</h1>
+        <p class="auth-subtitle">We'll send a verification code to your email</p>
+
+        <form id="registerForm" novalidate>
+          <div class="flex flex-col gap-4">
+            <div class="flex gap-3">
+              <div class="form-group" style="flex:1">
+                <label class="form-label" for="first_name">First name</label>
+                <input class="form-input" type="text" name="first_name" id="first_name"
+                       placeholder="Jane" required autocomplete="given-name" />
+              </div>
+              <div class="form-group" style="flex:1">
+                <label class="form-label" for="last_name">Last name</label>
+                <input class="form-input" type="text" name="last_name" id="last_name"
+                       placeholder="Doe" required autocomplete="family-name" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="email">Work email</label>
+              <input class="form-input" type="email" name="email" id="email"
+                     placeholder="jane@company.com" required autocomplete="email" />
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top:8px;justify-content:center">
+              Send verification code →
+            </button>
+          </div>
+        </form>
+        <p class="text-sm text-secondary mt-6" style="text-align:center">
+          Already have an account? <a href="/login/" style="color:var(--amber);font-weight:500">Sign in →</a>
+        </p>
+      </div>
+
+      <!-- ── STEP 2: OTP + Password ── -->
+      <div id="step2" style="display:none">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <button onclick="goBack()" class="btn btn-ghost btn-sm" style="padding:4px 8px">←</button>
+          <h1 class="auth-title" style="margin:0">Check your email</h1>
+        </div>
+        <p class="auth-subtitle" id="step2Subtitle">Enter the 6-digit code we sent you</p>
+
+        <!-- OTP sent info box -->
+        <div id="emailSentBox" style="background:var(--amber-dim);border:1px solid var(--amber-border);border-radius:10px;padding:14px 16px;margin-bottom:24px;display:flex;gap:10px;align-items:flex-start">
+          <span style="font-size:18px;flex-shrink:0">📧</span>
+          <div>
+            <div class="text-sm font-medium">Code sent to <span id="displayEmail" style="color:var(--amber)"></span></div>
+            <div class="text-xs text-muted mt-1">Expires in 10 minutes · Check your spam folder</div>
+          </div>
+        </div>
+        <div id="devOtpBox" style="display:none;background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.25);border-radius:10px;padding:14px 16px;margin-bottom:24px;">
+          <div class="text-sm font-medium" style="color:var(--green)">🛠 DEV MODE — Email not sent</div>
+          <div class="text-xs text-muted mt-1">Your OTP has been auto-filled below</div>
+        </div>
+
+        <form id="verifyForm" novalidate>
+          <div class="flex flex-col gap-4">
+            <!-- OTP input -->
+            <div class="form-group">
+              <label class="form-label">6-digit verification code</label>
+              <input class="form-input" type="text" name="otp" id="otpInput"
+                     placeholder="e.g. 482910"
+                     maxlength="6" pattern="[0-9]{6}" inputmode="numeric" required
+                     style="font-size:24px;letter-spacing:8px;text-align:center;font-family:monospace" />
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="margin-top:8px;justify-content:center">
+              Verify &amp; create account
+            </button>
+          </div>
+        </form>
+
+        <!-- Resend OTP -->
+        <div style="text-align:center;margin-top:16px">
+          <span class="text-sm text-secondary">Didn't receive it? </span>
+          <button id="resendBtn" class="btn btn-ghost btn-sm" style="color:var(--amber);padding:4px 8px" onclick="resendOTP()">Resend code</button>
+          <span id="resendTimer" class="text-xs text-muted" style="display:none"></span>
+        </div>
+      </div>
+
+    </div><!-- /auth-form -->
+  </div><!-- /auth-panel -->
+</div>
+
+<script>
+let userEmail = "";
+
+function goBack() {
+  document.getElementById("step2").style.display = "none";
+  document.getElementById("step1").style.display = "block";
+}
+
+// ── Step 1: submit details → send OTP ───────────────────────────
+document.getElementById("registerForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  clearFormErrors(this);
+  const data = serializeForm(this);
+  if (!data.first_name || !data.last_name || !data.email) {
+    Toast.error("Please fill in all fields.");
+    return;
+  }
+  setFormLoading(this, true);
+  try {
+    const res = await api.auth.register(data);
+    userEmail = data.email;
+    document.getElementById("displayEmail").textContent = userEmail;
+    document.getElementById("step2Subtitle").textContent =
+      `Enter the 6-digit code sent to ${userEmail}`;
+    document.getElementById("step1").style.display = "none";
+    document.getElementById("step2").style.display = "block";
+    document.getElementById("otpInput").focus();
+    if (res.dev_otp) {
+      // Dev mode: email failed, OTP returned in response
+      document.getElementById("devOtpBox").style.display = "block";
+      document.getElementById("emailSentBox").style.display = "none";
+      document.getElementById("otpInput").value = res.dev_otp;
+      Toast.info("DEV: OTP auto-filled — " + res.dev_otp);
+    } else {
+      Toast.success("OTP sent! Check your inbox.");
+    }
+    startResendCooldown(60);
+  } catch (err) {
+    const details = err.data?.error?.details || {};
+    Object.entries(details).forEach(([f, msgs]) =>
+      showFieldError(this, f, Array.isArray(msgs) ? msgs[0] : msgs));
+    if (!Object.keys(details).length) Toast.error(err.message);
+  } finally {
+    setFormLoading(this, false);
+  }
+});
+
+// ── Step 2: verify OTP ──────────────────────────────────────────
+document.getElementById("verifyForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  clearFormErrors(this);
+  const data = serializeForm(this);
+  if (!data.otp || data.otp.length !== 6) {
+    showFieldError(this, "otp", "Please enter the 6-digit code.");
+    return;
+  }
+  setFormLoading(this, true);
+  try {
+    const res = await fetch("/api/v1/auth/register/verify/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: userEmail, otp: data.otp }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || "Verification failed.");
+    Auth.set(json.tokens, json.user);
+    Toast.success("Account created! Welcome to TaskFlow 🎉");
+    setTimeout(() => window.location.href = "/dashboard/", 800);
+  } catch (err) {
+    Toast.error(err.message);
+  } finally {
+    setFormLoading(this, false);
+  }
+});
+
+// ── Resend OTP ───────────────────────────────────────────────────
+async function resendOTP() {
+  try {
+    await fetch("/api/v1/auth/register/resend-otp/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: userEmail }),
+    });
+    Toast.success("New OTP sent!");
+    startResendCooldown(60);
+  } catch { Toast.error("Failed to resend. Try again."); }
+}
+
+function startResendCooldown(seconds) {
+  const btn   = document.getElementById("resendBtn");
+  const timer = document.getElementById("resendTimer");
+  btn.style.display   = "none";
+  timer.style.display = "inline";
+  let remaining = seconds;
+  const interval = setInterval(() => {
+    timer.textContent = `Resend in ${remaining}s`;
+    remaining--;
+    if (remaining < 0) {
+      clearInterval(interval);
+      btn.style.display   = "inline";
+      timer.style.display = "none";
+    }
+  }, 1000);
+}
+
+// Auto-format OTP input (digits only)
+document.getElementById("otpInput").addEventListener("input", function() {
+  this.value = this.value.replace(/\D/g, "").slice(0, 6);
+});
+</script>
+{% endblock %}

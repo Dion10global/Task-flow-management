@@ -1,0 +1,73 @@
+{% extends "core/base.html" %}
+{% block title %}TaskFlow — Ship together, faster{% endblock %}
+
+{% block body %}
+<div class="landing">
+
+  <!-- Nav -->
+  <nav class="landing-nav">
+    <div class="flex items-center gap-3">
+      <div class="sidebar-logo-mark">T</div>
+      <span class="sidebar-logo-text">TaskFlow</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="/login/"    class="btn btn-ghost">Sign in</a>
+      <a href="/register/" class="btn btn-primary btn-sm">Get started →</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="landing-hero">
+    <div class="hero-eyebrow">
+      <span>⚡</span>
+    </div>
+    <h1 class="hero-title">
+      Projects. Tasks.<br><span>Done.</span>
+    </h1>
+    <p class="hero-subtitle">
+      TaskFlow is the task management platform your team will actually use. 
+      Simple enough to start in minutes, powerful enough to scale.
+    </p>
+    <div class="hero-actions">
+      <a href="/register/" class="btn btn-primary btn-lg">Start for free</a>
+      <a href="/login/"    class="btn btn-secondary btn-lg">Sign in</a>
+    </div>
+  </section>
+  
+
+  <!-- Features 
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <h3 class="feature-title">Kanban Board</h3>
+      <p class="feature-desc">Visualise work in real time. Drag tasks across columns as status changes.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">👥</div>
+      <h3 class="feature-title">Team Collaboration</h3>
+      <p class="feature-desc">Invite members, assign tasks, leave comments. Everyone stays in sync.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔐</div>
+      <h3 class="feature-title">Role-Based Access</h3>
+      <p class="feature-desc">Admins manage everything. Members see only what they need. Secure by design.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3 class="feature-title">Progress Tracking</h3>
+      <p class="feature-desc">Completion percentages, overdue alerts and per-project stats at a glance.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🚀</div>
+      <h3 class="feature-title">API-First</h3>
+      <p class="feature-desc">Full REST API with OpenAPI docs. Integrate with any tool you already love.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🛡️</div>
+      <h3 class="feature-title">Security Hardened</h3>
+      <p class="feature-desc">JWT auth, rate limiting, HTTPS, security headers — all on by default.</p>
+    </div>
+  </div> -->
+
+</div>
+{% endblock %}

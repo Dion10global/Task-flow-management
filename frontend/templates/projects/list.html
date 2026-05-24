@@ -1,0 +1,95 @@
+{% extends "core/base.html" %}
+{% block title %}Projects — TaskFlow{% endblock %}
+
+{% block body %}
+<div class="app-layout">
+  {% include "core/sidebar.html" %}
+
+  <main class="main-content">
+    <div class="page-header">
+      <div class="topbar">
+        <div>
+          <h1 class="page-title">Projects</h1>
+          <p class="page-subtitle" id="projectsSubtitle">Loading…</p>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input class="form-input search-input" type="search" id="projectSearch"
+                   placeholder="Search projects…" style="width:220px" />
+          </div>
+          <select class="form-input form-select text-sm" id="statusFilter" style="width:auto;padding:8px 30px 8px 12px">
+            <option value="">All statuses</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+            <option value="archived">Archived</option>
+          </select>
+          <button class="btn btn-primary btn-sm" data-modal-open="createProjectModal">+ New Project</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-body">
+      <div class="projects-grid" id="projectsGrid">
+        <div class="project-card skeleton" style="height:160px"></div>
+        <div class="project-card skeleton" style="height:160px"></div>
+        <div class="project-card skeleton" style="height:160px"></div>
+        <div class="project-card skeleton" style="height:160px"></div>
+      </div>
+      <div id="projectsEmpty" style="display:none">
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <h3 class="empty-title">No projects yet</h3>
+          <p class="empty-desc">Create your first project to get your team moving.</p>
+          <button class="btn btn-primary mt-4" data-modal-open="createProjectModal">+ New Project</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Create Project Modal -->
+<div class="modal-backdrop" id="createProjectModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">New Project</h2>
+      <div class="modal-close" data-modal-close="createProjectModal">✕</div>
+    </div>
+    <form id="createProjectForm" novalidate>
+      <div class="flex flex-col gap-4">
+        <div class="form-group">
+          <label class="form-label">Project name *</label>
+          <input class="form-input" name="name" type="text" placeholder="e.g. Website Redesign" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-input" name="description" rows="3"
+                    placeholder="What is this project about?" style="resize:vertical"></textarea>
+        </div>
+        <div class="flex gap-3">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Status</label>
+            <select class="form-input form-select" name="status">
+              <option value="active">Active</option>
+              <option value="completed">Completed</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Deadline</label>
+            <input class="form-input" name="deadline" type="date" />
+          </div>
+        </div>
+        <div class="flex gap-3" style="margin-top:8px">
+          <button type="button" class="btn btn-secondary" style="flex:1" data-modal-close="createProjectModal">Cancel</button>
+          <button type="submit" class="btn btn-primary" style="flex:1">Create Project</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/static/js/projects.js"></script>
+{% endblock %}
